@@ -63,6 +63,9 @@ export type LambdaRequestHandlerFunction<
 ) => Promise<ResponseKind>;
 
 
+type ErrorHandlerFunction = (error: Error) => Promise<void>;
+
+
 /**
  * Handle the creation of a lambda request type by transforming the lambda proxy event.
  * This function should santise all data and make a consistent and safe request object.
@@ -134,9 +137,17 @@ export const createLambdaProxyResponse = (response: ResponseKind): LambdaProxyRe
  */
 export class LambdaWrapper<C extends ContainerInterface<{}>> {
   private readonly container: C;
+  private errorHandler?: ErrorHandlerFunction;
 
   public constructor(container: C) {
     this.container = container;
+  }
+
+  /**
+   * Add an error handler function to be run when there is an error caught
+   */
+  public registerErrorHandler(handler: ErrorHandlerFunction) {
+    this.errorHandler = handler;
   }
 
   /**
@@ -169,6 +180,8 @@ export class LambdaWrapper<C extends ContainerInterface<{}>> {
           },
         };
 
+        this.handleError(error);
+
         return createLambdaProxyResponse(response);
       }
     };
@@ -180,7 +193,23 @@ export class LambdaWrapper<C extends ContainerInterface<{}>> {
    */
   public handle<E, O>(handler: ContainerLambdaHandlerFunction<C, E, O>): Handler<E, O> {
     return async(event, context): Promise<O> => {
-      return handler(this.container, event, context);
+      try {
+        return handler(this.container, event, context);
+      } catch (caught) {
+        const error: Error = caught;
+        this.handleError(error);
+
+        throw error;
+      }
     };
+  }
+
+  /**
+   * Call the error handler function if it is present.
+   */
+  protected async handleError(error: Error) {
+    if (this.errorHandler !== undefined) {
+      await this.errorHandler(error);
+    }
   }
 }
