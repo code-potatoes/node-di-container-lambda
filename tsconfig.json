@@ -32,6 +32,7 @@
     ".vscode",
     ".git",
     "node_modules",
+    "example",
     "src/**/*.spec.ts"
   ]
 }

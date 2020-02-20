@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, Context, Handler } from 'aws-lambda';
 import { ContainerInterface } from './Container';
-import { RequestMethod } from './types/request';
-import { ResponseHeader, ResponseKind } from './types/response';
+import { RequestMethod } from './http/request';
+import { ResponseHeader, ResponseKind } from './http/response';
 
 
 /**
