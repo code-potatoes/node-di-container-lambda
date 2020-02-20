@@ -1,5 +1,5 @@
 {
-  "name": "node-di-container-lambda",
+  "name": "@code-potatoes/node-di-container-lambda",
   "version": "0.0.1",
   "description": "A dependency injection container for use in AWS lambda functions.",
   "main": "build/index.js",
