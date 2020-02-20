@@ -25,20 +25,18 @@ export type ContainerInterface<C extends {}> = {
   service<K extends keyof C>(service: K): Promise<C[K]>;
 };
 
-type ContainerServiceInitiator<M, E, P, S> = (container: Container<M, E, P>) => Promise<S>;
+type ContainerServiceInitiator<M, E, S> = (container: Container<M, E>) => Promise<S>;
 
-export type ContainerServiceInitiatorMap<M, E, P> = {
-  [K in keyof M]: ContainerServiceInitiator<M, E, P, M[K]>;
+export type ContainerServiceInitiatorMap<M, E> = {
+  [K in keyof M]: ContainerServiceInitiator<M, E, M[K]>;
 };
 
-export class Container<M extends {}, E extends {}, P extends {}> implements ContainerInterface<M> {
-  public parameters: P;
+export class Container<M extends {}, E extends {}> implements ContainerInterface<M> {
   private readonly environment: Environment<E>;
-  private readonly initiator: ContainerServiceInitiatorMap<M, E, P>;
+  private readonly initiator: ContainerServiceInitiatorMap<M, E>;
   private readonly cache: Partial<M>;
 
-  public constructor(environment: Environment<E>, initiator: ContainerServiceInitiatorMap<M, E, P>, parameters: P) {
-    this.parameters = parameters;
+  public constructor(environment: Environment<E>, initiator: ContainerServiceInitiatorMap<M, E>) {
     this.environment = environment;
     this.initiator = initiator;
     this.cache = {};
