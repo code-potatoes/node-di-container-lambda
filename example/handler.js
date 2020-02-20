@@ -4,45 +4,34 @@
  * enable you to re-use the environment and container across multiple lambda functions.
  */
 
-import * as S3 from 'aws-sdk/clients/s3';
-import { LambdaRequestHandlerFunction, LambdaWrapper } from '../src/Lambda';
+import S3 from 'aws-sdk/clients/s3';
+import { LambdaWrapper } from '../src/Lambda';
 import { Environment } from '../src/Environment';
-import { Container, ContainerServiceInitiatorMap } from '../src/Container';
-import { RequestMethod } from '../src/http/request';
+import { Container } from '../src/Container';
 import { ResponseStatusCode } from '../src/http/response';
 
 
 /**
- * environment.ts
+ * environment.ks
  */
-type MyProjectEnvironmentMap = {
-  LOG_LEVEL: string;
-  MY_S3_BUCKET: 'my-s3-bucket';
-};
-const environment = Environment.createFromNodeProcess<MyProjectEnvironmentMap>();
+const environment = Environment.createFromNodeProcess();
 
 /**
- * handler.ts
+ * handler.js
  */
-type MyProjectServiceMap = {
-  'aws.s3': S3,
-};
-
-const containerInitiator: ContainerServiceInitiatorMap<MyProjectServiceMap, MyProjectEnvironmentMap> = {
+const containerInitiator = {
   'aws.s3': async() => {
     return new S3();
   },
 };
 
-type ContainerType = Container<MyProjectServiceMap, MyProjectEnvironmentMap>;
-
-export const container = new Container<MyProjectServiceMap, MyProjectEnvironmentMap>(environment, containerInitiator);
+export const container = new Container(environment, containerInitiator);
 
 /**
  * A lambda proxy wrapper allowing for the user of custom request handlers.
  * Handles the injection of the container and the handling of request/response sanitation.
  */
-const handlerWrapper = new LambdaWrapper<ContainerType>(container);
+const handlerWrapper = new LambdaWrapper(container);
 
 /**
  * handlers/myLambdaHandler.ts
@@ -52,7 +41,7 @@ const handlerWrapper = new LambdaWrapper<ContainerType>(container);
  * Your lambda handler function - this will be given the configured container, request and context for your function.
  * This is exported to enable you to test functions in isolation, your lambda functions should be invoking the `action` export.
  */
-export const myLambdaHandler: LambdaRequestHandlerFunction<ContainerType, RequestMethod.Get, {}, {}, {}> = async(container, request, context) => {
+export const myLambdaHandler = async(container, request, context) => {
   const s3 = await container.service('aws.s3');
 
   const result = s3.createPresignedPost({
