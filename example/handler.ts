@@ -45,6 +45,13 @@ export const container = new Container<MyProjectServiceMap, MyProjectEnvironment
 const handlerWrapper = new LambdaWrapper<ContainerType>(container);
 
 /**
+ * Add a custom error handler to the Lambda wrapper so we can log error states to whatever log system we use.
+ */
+handlerWrapper.registerErrorHandler(async (error: Error) => {
+  console.error(error);
+});
+
+/**
  * handlers/myLambdaHandler.ts
  */
 
