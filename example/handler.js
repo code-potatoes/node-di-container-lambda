@@ -34,14 +34,14 @@ export const container = new Container(environment, containerInitiator);
 const handlerWrapper = new LambdaWrapper(container);
 
 /**
- * handlers/myLambdaHandler.ts
+ * handlers/myGetLambdaHandler.ts
  */
 
 /**
  * Your lambda handler function - this will be given the configured container, request and context for your function.
  * This is exported to enable you to test functions in isolation, your lambda functions should be invoking the `action` export.
  */
-export const myLambdaHandler = async(container, request, context) => {
+export const myGetLambdaHandler = async(container, request, context) => {
   const s3 = await container.service('aws.s3');
 
   const result = s3.createPresignedPost({
@@ -60,4 +60,35 @@ export const myLambdaHandler = async(container, request, context) => {
  * Your lambda handler function wrapped by the method for the event you expect to receive.
  * This should be invoked by your lambda function which will then provide the container, request and context to your function.
  */
-export const action = handlerWrapper.restApiProxy(myLambdaHandler);
+export const action = handlerWrapper.restApiProxy(myGetLambdaHandler);
+
+/**
+ * handlers/myPostLambdaHandler.ts
+ */
+
+/**
+ * Your lambda handler function - this will be given the configured container, request and context for your function.
+ * This is exported to enable you to test functions in isolation, your lambda functions should be invoking the `action` export.
+ */
+export const myPostLambdaHandler = async(container, request, context) => {
+  const s3 = await container.service('aws.s3');
+
+  await s3.putObject({
+    Bucket: container.env('MY_S3_BUCKET'),
+    Key: `${request.pathParameters.id}.json`,
+    Body: JSON.stringify({
+      name: request.body.name,
+    })
+  });
+
+  return {
+    status: ResponseStatusCode.Created,
+    data: {},
+  };
+};
+
+/**
+ * Your lambda handler function wrapped by the method for the event you expect to receive.
+ * This should be invoked by your lambda function which will then provide the container, request and context to your function.
+ */
+export const action = handlerWrapper.restApiProxy(myPostLambdaHandler);

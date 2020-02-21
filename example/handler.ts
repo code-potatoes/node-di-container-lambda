@@ -45,14 +45,14 @@ export const container = new Container<MyProjectServiceMap, MyProjectEnvironment
 const handlerWrapper = new LambdaWrapper<ContainerType>(container);
 
 /**
- * handlers/myLambdaHandler.ts
+ * handlers/myGetLambdaHandler.ts
  */
 
 /**
  * Your lambda handler function - this will be given the configured container, request and context for your function.
  * This is exported to enable you to test functions in isolation, your lambda functions should be invoking the `action` export.
  */
-export const myLambdaHandler: LambdaRequestHandlerFunction<ContainerType, RequestMethod.Get, {}, {}, {}> = async(container, request, context) => {
+export const myGetLambdaHandler: LambdaRequestHandlerFunction<ContainerType, RequestMethod.Get, {}, {}, undefined> = async(container, request, context) => {
   const s3 = await container.service('aws.s3');
 
   const result = s3.createPresignedPost({
@@ -71,4 +71,35 @@ export const myLambdaHandler: LambdaRequestHandlerFunction<ContainerType, Reques
  * Your lambda handler function wrapped by the method for the event you expect to receive.
  * This should be invoked by your lambda function which will then provide the container, request and context to your function.
  */
-export const action = handlerWrapper.restApiProxy(myLambdaHandler);
+export const action = handlerWrapper.restApiProxy(myGetLambdaHandler);
+
+/**
+ * handlers/myPostLambdaHandler.ts
+ */
+
+/**
+ * Your lambda handler function - this will be given the configured container, request and context for your function.
+ * This is exported to enable you to test functions in isolation, your lambda functions should be invoking the `action` export.
+ */
+export const myPostLambdaHandler: LambdaRequestHandlerFunction<ContainerType, RequestMethod.Get, { id: string; }, {}, { name: string; }> = async(container, request, context) => {
+  const s3 = await container.service('aws.s3');
+
+  await s3.putObject({
+    Bucket: container.env('MY_S3_BUCKET'),
+    Key: `${request.pathParameters.id}.json`,
+    Body: JSON.stringify({
+      name: request.body.name,
+    })
+  });
+
+  return {
+    status: ResponseStatusCode.Created,
+    data: {},
+  };
+};
+
+/**
+ * Your lambda handler function wrapped by the method for the event you expect to receive.
+ * This should be invoked by your lambda function which will then provide the container, request and context to your function.
+ */
+export const action = handlerWrapper.restApiProxy(myPostLambdaHandler);

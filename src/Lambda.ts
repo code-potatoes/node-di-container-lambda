@@ -26,9 +26,6 @@ export type ContainerLambdaHandlerFunction<C extends ContainerInterface<{}>, E e
 ) => Promise<O>;
 
 
-class BadRequestError extends Error {}
-
-
 /**
  * A custom lambda request that allows for cleaner usage in custom handlers.
  * Data in this request has been sanitised already.
@@ -37,7 +34,7 @@ export type LambdaRequest<
   M extends RequestMethod,
   P extends {},
   Q extends {},
-  B extends undefined,
+  B extends any,
   > = {
   httpMethod: M;
   pathParameters: P;
@@ -62,7 +59,7 @@ export type LambdaRequestHandlerFunction<
   M extends RequestMethod,
   P extends {},
   Q extends {},
-  B extends {},
+  B extends any,
   > = (
   container: C,
   request: LambdaRequest<M, P, Q, B>,
@@ -78,9 +75,9 @@ export const createLambdaRequest = <
   M extends RequestMethod,
   P extends {},
   Q extends {},
-  B extends {},
+  B extends any,
   >(event: APIGatewayProxyEvent): LambdaRequest<M, P, Q, B> => {
-  let body = undefined as B;
+  let body = event.body as B;
 
   if (event.headers['content-type'] === 'application/json') {
     try {
@@ -158,7 +155,7 @@ export class LambdaWrapper<C extends ContainerInterface<{}>> {
     M extends RequestMethod,
     P extends {},
     Q extends {},
-    B extends {},
+    B extends any,
     >(handler: LambdaRequestHandlerFunction<C, M, P, Q, B>): APIGatewayProxyHandler {
     return async(event, context) => {
 
