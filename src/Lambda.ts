@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler, Context, Handler } from '
 import { ContainerInterface } from './Container';
 import { RequestMethod } from './http/request';
 import { ResponseHeader, ResponseKind } from './http/response';
+import { APIGatewayEventRequestContext } from 'aws-lambda/common/api-gateway';
 
 
 /**
@@ -24,6 +25,10 @@ export type ContainerLambdaHandlerFunction<C extends ContainerInterface<{}>, E e
   context: Context,
 ) => Promise<O>;
 
+
+class BadRequestError extends Error {}
+
+
 /**
  * A custom lambda request that allows for cleaner usage in custom handlers.
  * Data in this request has been sanitised already.
@@ -32,19 +37,21 @@ export type LambdaRequest<
   M extends RequestMethod,
   P extends {},
   Q extends {},
-  B extends {},
+  B extends undefined,
   > = {
-  id: string;
-  stage: string;
-
-  method: M;
-  path: string;
-
-  headers: StringMap;
-
-  params: P;
-  query: Q;
+  httpMethod: M;
+  pathParameters: P;
+  queryStringParameters: Q;
   body: B;
+
+  path: string;
+  headers: StringMap;
+  isBase64Encoded: boolean;
+  multiValueHeaders: { [name: string]: string[] };
+  multiValueQueryStringParameters: null | { [name: string]: string[] };
+  stageVariables: null | StringMap;
+  requestContext: APIGatewayEventRequestContext;
+  resource: string;
 };
 
 /**
@@ -76,34 +83,38 @@ export const createLambdaRequest = <
   Q extends {},
   B extends {},
   >(event: APIGatewayProxyEvent): LambdaRequest<M, P, Q, B> => {
-  let body = {} as B;
+  let body = undefined as B;
 
-  try {
-    if (typeof event.body === 'string' && event.body !== '') {
-      body = JSON.parse(event.body) as B;
+  if (event.headers['content-type'] === 'application/json') {
+    try {
+      if (typeof event.body === 'string' && event.body !== '') {
+        body = JSON.parse(event.body) as B;
+      }
+    } catch (error) {
+      // Invalid payload
     }
-  } catch (error) {
-    // Invalid payload
   }
 
   return {
-    id: event.requestContext.requestId,
-    stage: event.requestContext.stage,
-
-    method: event.httpMethod as M,
-    path: event.path,
-
-    headers: event.headers,
-
-    params: event.pathParameters === null
+    httpMethod: event.httpMethod as M,
+    pathParameters: event.pathParameters === null
       ? {} as P
       : event.pathParameters as P,
 
-    query: event.queryStringParameters === null
+    queryStringParameters: event.queryStringParameters === null
       ? {} as Q
       : event.queryStringParameters as Q,
 
     body,
+
+    path: event.path,
+    headers: event.headers,
+    multiValueHeaders: event.multiValueHeaders,
+    isBase64Encoded: event.isBase64Encoded,
+    requestContext: event.requestContext,
+    resource: event.resource,
+    stageVariables: event.stageVariables,
+    multiValueQueryStringParameters: event.multiValueQueryStringParameters,
   };
 };
 
